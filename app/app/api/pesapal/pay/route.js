@@ -15,14 +15,13 @@ export async function POST(request) {
     const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET;
     const callbackUrl = process.env.PESAPAL_CALLBACK_URL;
 
-    // ✅ Your working IPN ID
     const notificationId = "9dce10fc-6d43-441b-ad46-da5670ba84b2";
 
     // ❗ Validate environment variables
     if (!consumerKey || !consumerSecret || !callbackUrl) {
       return Response.json({
         success: false,
-        error: "Missing environment variables"
+        error: "Missing environment variables",
       }, { status: 500 });
     }
 
@@ -52,7 +51,7 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // 💳 STEP 2: Create order payload
+    // 💳 STEP 2: Build order payload (STRICT FORMAT)
     const orderPayload = {
       id: reference,
       currency: "KES",
@@ -85,12 +84,21 @@ export async function POST(request) {
 
     const orderData = await orderResponse.json();
 
-    // 🔍 DEBUG LOGS (VERY IMPORTANT)
+    // 🔍 DEBUG MODE (IMPORTANT - REMOVE LATER)
     console.log("AUTH RESPONSE:", authData);
+    console.log("ORDER PAYLOAD:", orderPayload);
     console.log("ORDER RESPONSE:", orderData);
 
-    // ❌ HANDLE FAILURES PROPERLY
-    if (!orderData || orderData.error || !orderData.redirect_url) {
+    // ❌ STRONG ERROR HANDLING (IMPORTANT FIX)
+    if (!orderData) {
+      return Response.json({
+        success: false,
+        message: "No response from Pesapal",
+        authData,
+      }, { status: 400 });
+    }
+
+    if (orderData.error || !orderData.redirect_url) {
       return Response.json({
         success: false,
         message: "Pesapal order failed",
@@ -99,7 +107,7 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // ✅ SUCCESS RESPONSE
+    // ✅ SUCCESS
     return Response.json({
       success: true,
       redirect_url: orderData.redirect_url,
