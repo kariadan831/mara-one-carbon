@@ -15,7 +15,17 @@ export async function POST(request) {
     const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET;
     const callbackUrl = process.env.PESAPAL_CALLBACK_URL;
 
-    // ❗ STEP 1: Get token
+    const notificationId = "9dce10fc-6d43-441b-ad46-da5670ba84b2";
+
+    // ✅ VALIDATION (IMPORTANT)
+    if (!consumerKey || !consumerSecret || !callbackUrl) {
+      return Response.json({
+        success: false,
+        error: "Missing environment variables"
+      }, { status: 500 });
+    }
+
+    // 🔐 STEP 1: Get token
     const authResponse = await fetch(
       "https://pay.pesapal.com/v3/api/Auth/RequestToken",
       {
@@ -31,27 +41,24 @@ export async function POST(request) {
     );
 
     const authData = await authResponse.json();
+    const token = authData?.token;
 
-    if (!authData.token) {
-      return Response.json(
-        {
-          success: false,
-          error: "Failed to get Pesapal token",
-          authData,
-        },
-        { status: 400 }
-      );
+    if (!token) {
+      return Response.json({
+        success: false,
+        error: "Failed to get Pesapal token",
+        authData,
+      }, { status: 400 });
     }
 
-    const token = authData.token;
-
-    // ❗ STEP 2: Create order request
+    // 💳 STEP 2: Create order
     const orderPayload = {
       id: reference,
       currency: "KES",
       amount: Number(amount),
       description: "Mara One Carbon Payment",
       callback_url: callbackUrl,
+      notification_id: notificationId,
 
       billing_address: {
         email_address: email,
@@ -75,22 +82,20 @@ export async function POST(request) {
 
     const orderData = await orderResponse.json();
 
-    // ❗ DEBUG (important for now)
-    console.log("AUTH:", authData);
-    console.log("ORDER:", orderData);
+    // 🔍 DEBUG (IMPORTANT)
+    console.log("AUTH RESPONSE:", authData);
+    console.log("ORDER RESPONSE:", orderData);
 
-    if (!orderData.redirect_url) {
-      return Response.json(
-        {
-          success: false,
-          error: "Pesapal did not return redirect URL",
-          orderData,
-        },
-        { status: 400 }
-      );
+    // ❌ HANDLE ERROR PROPERLY
+    if (!orderData?.redirect_url) {
+      return Response.json({
+        success: false,
+        error: "Pesapal order failed",
+        orderData,
+      }, { status: 400 });
     }
 
-    // ✔ SUCCESS RESPONSE
+    // ✅ SUCCESS
     return Response.json({
       success: true,
       redirect_url: orderData.redirect_url,
@@ -100,13 +105,10 @@ export async function POST(request) {
   } catch (error) {
     console.error("Pesapal Error:", error);
 
-    return Response.json(
-      {
-        success: false,
-        error: "Payment request failed",
-        message: error.message,
-      },
-      { status: 500 }
-    );
+    return Response.json({
+      success: false,
+      error: "Payment request failed",
+      message: error.message,
+    }, { status: 500 });
   }
 }
