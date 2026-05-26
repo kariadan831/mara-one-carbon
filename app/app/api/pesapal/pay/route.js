@@ -15,9 +15,10 @@ export async function POST(request) {
     const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET;
     const callbackUrl = process.env.PESAPAL_CALLBACK_URL;
 
+    // ✅ Your working IPN ID
     const notificationId = "9dce10fc-6d43-441b-ad46-da5670ba84b2";
 
-    // ✅ VALIDATION (IMPORTANT)
+    // ❗ Validate environment variables
     if (!consumerKey || !consumerSecret || !callbackUrl) {
       return Response.json({
         success: false,
@@ -51,7 +52,7 @@ export async function POST(request) {
       }, { status: 400 });
     }
 
-    // 💳 STEP 2: Create order
+    // 💳 STEP 2: Create order payload
     const orderPayload = {
       id: reference,
       currency: "KES",
@@ -65,9 +66,11 @@ export async function POST(request) {
         phone_number: phone,
         first_name: firstName,
         last_name: lastName,
+        country_code: "KE",
       },
     };
 
+    // 🚀 STEP 3: Submit order
     const orderResponse = await fetch(
       "https://pay.pesapal.com/v3/api/Transactions/SubmitOrderRequest",
       {
@@ -82,20 +85,21 @@ export async function POST(request) {
 
     const orderData = await orderResponse.json();
 
-    // 🔍 DEBUG (IMPORTANT)
+    // 🔍 DEBUG LOGS (VERY IMPORTANT)
     console.log("AUTH RESPONSE:", authData);
     console.log("ORDER RESPONSE:", orderData);
 
-    // ❌ HANDLE ERROR PROPERLY
-    if (!orderData?.redirect_url) {
+    // ❌ HANDLE FAILURES PROPERLY
+    if (!orderData || orderData.error || !orderData.redirect_url) {
       return Response.json({
         success: false,
-        error: "Pesapal order failed",
+        message: "Pesapal order failed",
+        authData,
         orderData,
       }, { status: 400 });
     }
 
-    // ✅ SUCCESS
+    // ✅ SUCCESS RESPONSE
     return Response.json({
       success: true,
       redirect_url: orderData.redirect_url,
