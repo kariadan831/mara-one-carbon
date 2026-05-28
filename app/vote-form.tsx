@@ -1,8 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import { db } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export default function VoteForm() {
   const [name, setName] = useState("");
@@ -22,24 +20,27 @@ export default function VoteForm() {
     }
 
     setLoading(true);
-    setStatus("Saving vote...");
+    setStatus("Preparing payment...");
 
     try {
       const reference = `VOTE_${Date.now()}_${vote}`;
 
-      const docRef = await addDoc(collection(db, "votes"), {
-        name,
-        phone,
-        email,
-        vote,
-        message,
-        reference,
-        paid: false,
-        createdAt: serverTimestamp(),
-      });
+      // ✅ STEP 1: SAVE TEMPORARY DATA ONLY
+      sessionStorage.setItem(
+        "pending_vote",
+        JSON.stringify({
+          name,
+          phone,
+          email,
+          vote,
+          message,
+          reference,
+        })
+      );
 
       setStatus("Redirecting to payment...");
 
+      // ✅ STEP 2: INITIATE PAYMENT
       const res = await fetch("/api/pesapal/pay", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -56,22 +57,13 @@ export default function VoteForm() {
       const data = await res.json();
 
       if (data.redirect_url) {
-        sessionStorage.setItem(
-          "pending_vote",
-          JSON.stringify({
-            id: docRef.id,
-            reference,
-            vote,
-          })
-        );
-
         window.location.href = data.redirect_url;
       } else {
-        setStatus("❌ Payment failed");
+        setStatus("❌ Payment failed. Try again.");
       }
     } catch (err) {
       console.error(err);
-      setStatus("❌ Error saving vote");
+      setStatus("❌ Something went wrong");
     } finally {
       setLoading(false);
     }

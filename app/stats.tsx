@@ -2,24 +2,27 @@
 
 import { useEffect, useState } from "react";
 import { db } from "@/lib/firebase";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 
 type Vote = {
-  name?: string;
-  phone?: string;
-  email?: string;
   vote?: string;
   message?: string;
+  paid?: boolean;
 };
 
 export default function Stats() {
   const [votes, setVotes] = useState<Vote[]>([]);
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "votes"), (snapshot) => {
-      const data: Vote[] = snapshot.docs.map((doc) => ({
-        ...(doc.data() as Vote),
-      }));
+    const q = query(
+      collection(db, "votes"),
+      where("paid", "==", true)
+    );
+
+    const unsub = onSnapshot(q, (snapshot) => {
+      const data: Vote[] = snapshot.docs.map(
+        (doc) => doc.data() as Vote
+      );
 
       setVotes(data);
     });
@@ -27,16 +30,20 @@ export default function Stats() {
     return () => unsub();
   }, []);
 
+  // TOTAL (ONLY PAID)
   const total = votes.length;
 
+  // YES
   const yes = votes.filter(
     (v) => (v.vote || "").toUpperCase() === "YES"
   ).length;
 
+  // NO
   const no = votes.filter(
     (v) => (v.vote || "").toUpperCase() === "NO"
   ).length;
 
+  // COMMENTS
   const comments = votes.filter(
     (v) => v.message && v.message.trim() !== ""
   ).length;
@@ -48,7 +55,7 @@ export default function Stats() {
 
         {/* TOTAL */}
         <div className="rounded-xl bg-slate-900 border border-slate-800 p-5 shadow hover:border-slate-700 transition">
-          <p className="text-sm text-slate-400">Total Subscribers</p>
+          <p className="text-sm text-slate-400">Total Paid Votes</p>
           <h2 className="mt-2 text-3xl font-bold text-white">{total}</h2>
         </div>
 
