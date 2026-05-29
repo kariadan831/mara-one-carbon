@@ -20,9 +20,9 @@ export default function Stats() {
     );
 
     const unsub = onSnapshot(q, (snapshot) => {
-      const data: Vote[] = snapshot.docs.map(
-        (doc) => doc.data() as Vote
-      );
+      const data: Vote[] = snapshot.docs.map((doc) => ({
+        ...(doc.data() as Vote),
+      }));
 
       setVotes(data);
     });
@@ -30,7 +30,7 @@ export default function Stats() {
     return () => unsub();
   }, []);
 
-  // TOTAL (ONLY PAID)
+  // TOTAL
   const total = votes.length;
 
   // YES
@@ -51,30 +51,30 @@ export default function Stats() {
   return (
     <div className="mx-auto mt-10 max-w-6xl px-6">
       {/* GRID */}
-      <div className="grid gap-4 md:grid-cols-4">
-
-        {/* TOTAL */}
-        <div className="rounded-xl bg-slate-900 border border-slate-800 p-5 shadow hover:border-slate-700 transition">
-          <p className="text-sm text-slate-400">Total Paid Votes</p>
-          <h2 className="mt-2 text-3xl font-bold text-white">{total}</h2>
-        </div>
+      <div className="grid gap-4 md:grid-cols-3">
 
         {/* YES */}
-        <div className="rounded-xl bg-slate-900 border border-slate-800 p-5 shadow hover:border-green-500 transition">
+        <div className="rounded-xl bg-slate-900 border border-slate-800 p-5 shadow hover:border-green-500 transition text-center">
           <p className="text-sm text-slate-400">YES Votes</p>
-          <h2 className="mt-2 text-3xl font-bold text-green-400">{yes}</h2>
+          <h2 className="mt-2 text-3xl font-bold text-green-400">
+            {yes}
+          </h2>
         </div>
 
         {/* NO */}
-        <div className="rounded-xl bg-slate-900 border border-slate-800 p-5 shadow hover:border-red-500 transition">
+        <div className="rounded-xl bg-slate-900 border border-slate-800 p-5 shadow hover:border-red-500 transition text-center">
           <p className="text-sm text-slate-400">NO Votes</p>
-          <h2 className="mt-2 text-3xl font-bold text-red-400">{no}</h2>
+          <h2 className="mt-2 text-3xl font-bold text-red-400">
+            {no}
+          </h2>
         </div>
 
         {/* COMMENTS */}
-        <div className="rounded-xl bg-slate-900 border border-slate-800 p-5 shadow hover:border-blue-500 transition">
+        <div className="rounded-xl bg-slate-900 border border-slate-800 p-5 shadow hover:border-blue-500 transition text-center">
           <p className="text-sm text-slate-400">Comments</p>
-          <h2 className="mt-2 text-3xl font-bold text-blue-400">{comments}</h2>
+          <h2 className="mt-2 text-3xl font-bold text-blue-400">
+            {comments}
+          </h2>
         </div>
 
       </div>

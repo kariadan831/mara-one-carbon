@@ -3,12 +3,12 @@ import "./globals.css";
 import { GoogleAnalytics } from "@next/third-parties/google";
 
 export const metadata: Metadata = {
-  title: "Mara One Carbon Public Voice",
-  description: "Public voting platform for Mara One Carbon.",
+  title: "Mara One Carbon Voting Platform",
+  description: "Mara One Carbon digital voting and public participation system.",
   openGraph: {
-    title: "Mara One Carbon Public Voice",
-    description: "Public voting platform for Mara One Carbon.",
-    siteName: "Mara One Carbon Public Voice",
+    title: "Mara One Carbon Voting Platform",
+    description: "Mara One Carbon digital voting and public participation system.",
+    siteName: "Mara One Carbon",
     type: "website",
   },
 };
