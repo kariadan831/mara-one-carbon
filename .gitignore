@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# Firebase Admin SDK (VERY IMPORTANT - DO NOT PUSH)
+lib/serviceAccount.json
+
+# Environment files (extra safety)
+.env
+.env.local
+.env.production
