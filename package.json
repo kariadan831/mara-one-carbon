@@ -9,8 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@google-cloud/firestore": "^8.6.0",
     "@next/third-parties": "^16.2.6",
+    "@opentelemetry/api": "^1.9.1",
+    "@opentelemetry/sdk-node": "^0.218.0",
     "firebase": "^12.13.0",
+    "firebase-admin": "^13.10.0",
     "next": "16.2.6",
     "react": "19.2.4",
     "react-dom": "19.2.4"

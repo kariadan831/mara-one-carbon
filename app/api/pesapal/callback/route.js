@@ -1,72 +1,48 @@
-export async function GET(request) {
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs, updateDoc } from "firebase/firestore";
+
+export async function GET(req) {
   try {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(req.url);
 
-    const orderTrackingId = searchParams.get("OrderTrackingId");
-    const merchantReference = searchParams.get("OrderMerchantReference");
+    const trackingId = searchParams.get("OrderTrackingId");
+    const reference = searchParams.get("OrderMerchantReference");
 
-    console.log("📩 Pesapal GET Callback:", {
-      orderTrackingId,
-      merchantReference,
+    if (!reference) {
+      return Response.json({ message: "Missing reference" }, { status: 400 });
+    }
+
+    const q = query(
+      collection(db, "votes"),
+      where("reference", "==", reference)
+    );
+
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      return Response.json({ message: "Vote not found" }, { status: 404 });
+    }
+
+    snapshot.forEach(async (docSnap) => {
+      await updateDoc(docSnap.ref, {
+        paid: true,
+        status: "PAID",
+        trackingId,
+        paidAt: new Date(),
+      });
     });
-
-    // IMPORTANT: return simple success page response
-    return Response.json({
-      success: true,
-      message: "Callback received",
-      orderTrackingId,
-      merchantReference,
-    });
-
-  } catch (error) {
-    console.error("GET Callback Error:", error);
-
-    return Response.json({
-      success: false,
-      error: "Callback failed",
-    }, { status: 500 });
-  }
-}
-
-
-// ===============================
-// POST CALLBACK (IMPORTANT)
-// ===============================
-export async function POST(request) {
-  try {
-    const body = await request.json().catch(() => ({}));
-
-    console.log("📩 Pesapal POST Callback:", body);
-
-    // IMPORTANT: Pesapal may send payment status here
-    const {
-      OrderTrackingId,
-      OrderMerchantReference,
-      OrderNotificationType,
-      PaymentMethod,
-      Amount,
-      Status,
-    } = body;
 
     return Response.json({
       success: true,
-      message: "POST callback received",
-      data: {
-        OrderTrackingId,
-        OrderMerchantReference,
-        OrderNotificationType,
-        PaymentMethod,
-        Amount,
-        Status,
-      },
+      message: "Vote activated",
     });
 
   } catch (error) {
-    console.error("POST Callback Error:", error);
+    console.error("CALLBACK ERROR:", error);
 
-    return Response.json({
-      success: false,
-      error: "POST callback failed",
-    }, { status: 500 });
+    return Response.json(
+      { message: "Callback failed", error: error.message },
+      { status: 500 }
+    );
   }
 }

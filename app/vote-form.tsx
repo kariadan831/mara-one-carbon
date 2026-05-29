@@ -5,7 +5,7 @@ import React, { useState } from "react";
 export default function VoteForm() {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
-  const [vote, setVote] = useState("YES");
+  const [vote, setVote] = useState<"YES" | "NO">("YES");
   const [message, setMessage] = useState("");
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -15,55 +15,47 @@ export default function VoteForm() {
     e.preventDefault();
 
     if (!name || !phone || !email) {
-      setStatus("❌ Please fill all fields");
+      setStatus("❌ Please fill all required fields");
       return;
     }
 
     setLoading(true);
-    setStatus("Preparing payment...");
+    setStatus("Submitting vote...");
 
     try {
-      const reference = `VOTE_${Date.now()}_${vote}`;
+      const reference = `VOTE_${Date.now()}`;
 
-      // ✅ STEP 1: SAVE TEMPORARY DATA ONLY
-      sessionStorage.setItem(
-        "pending_vote",
-        JSON.stringify({
+      const res = await fetch("/api/vote", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
           name,
           phone,
           email,
           vote,
           message,
           reference,
-        })
-      );
-
-      setStatus("Redirecting to payment...");
-
-      // ✅ STEP 2: INITIATE PAYMENT
-      const res = await fetch("/api/pesapal/pay", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          amount: 50,
-          phone,
-          email,
-          firstName: name.split(" ")[0] || "User",
-          lastName: name.split(" ")[1] || "User",
-          reference,
         }),
       });
 
       const data = await res.json();
 
-      if (data.redirect_url) {
-        window.location.href = data.redirect_url;
+      if (data.success) {
+        setStatus("✅ Vote submitted successfully!");
+
+        setName("");
+        setPhone("");
+        setEmail("");
+        setMessage("");
+        setVote("YES");
       } else {
-        setStatus("❌ Payment failed. Try again.");
+        setStatus(data.message || "❌ Failed to submit vote");
       }
-    } catch (err) {
-      console.error(err);
-      setStatus("❌ Something went wrong");
+    } catch (error) {
+      console.error(error);
+      setStatus("❌ Server error. Try again.");
     } finally {
       setLoading(false);
     }
@@ -97,7 +89,7 @@ export default function VoteForm() {
 
       <select
         value={vote}
-        onChange={(e) => setVote(e.target.value)}
+        onChange={(e) => setVote(e.target.value as "YES" | "NO")}
         className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-500"
       >
         <option value="YES">YES</option>
@@ -105,23 +97,21 @@ export default function VoteForm() {
       </select>
 
       <textarea
-        placeholder="Message"
+        placeholder="Message (optional)"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
-        className="w-full rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-500 min-h-[120px]"
+        className="w-full min-h-32 rounded-lg border border-slate-700 bg-slate-950 px-4 py-3 text-white outline-none focus:border-emerald-500"
       />
 
       <button
         disabled={loading}
         className="w-full rounded-lg bg-emerald-500 py-3 font-bold text-black hover:bg-emerald-400 transition disabled:opacity-60"
       >
-        {loading ? "Processing..." : "Submit (50 KES)"}
+        {loading ? "Processing..." : "Submit Vote (FREE)"}
       </button>
 
       {status && (
-        <p className="text-sm text-slate-300 text-center">
-          {status}
-        </p>
+        <p className="text-center text-sm text-slate-300">{status}</p>
       )}
     </form>
   );
