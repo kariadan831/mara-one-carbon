@@ -55,8 +55,8 @@ export default function VoteResults() {
         Public Voting Results
       </h2>
 
-      {/* STATS */}
-      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+      {/* YES & NO ONLY */}
+      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
         <div className="rounded-xl bg-green-600 p-4">
           <h3 className="text-xl font-bold">YES</h3>
           <p className="text-3xl">{yesVotes}</p>
@@ -65,11 +65,6 @@ export default function VoteResults() {
         <div className="rounded-xl bg-red-600 p-4">
           <h3 className="text-xl font-bold">NO</h3>
           <p className="text-3xl">{noVotes}</p>
-        </div>
-
-        <div className="rounded-xl bg-blue-600 p-4">
-          <h3 className="text-xl font-bold">TOTAL</h3>
-          <p className="text-3xl">{votes.length}</p>
         </div>
       </div>
 
@@ -92,10 +87,12 @@ export default function VoteResults() {
                   className={
                     vote.vote === "YES"
                       ? "text-green-400"
-                      : "text-red-400"
+                      : vote.vote === "NO"
+                      ? "text-red-400"
+                      : "text-gray-400"
                   }
                 >
-                  {vote.vote ?? "N/A"}
+                  {vote.vote || "Pending"}
                 </span>
               </div>
 
