@@ -1,7 +1,6 @@
 import VoteFeed from "@/components/VoteFeed";
 import VoteResults from "@/components/VoteResults";
 import VoteForm from "./vote-form";
-import Stats from "./stats";
 
 export default function Home() {
   return (
@@ -20,13 +19,6 @@ export default function Home() {
         <p className="mt-6 mx-auto max-w-2xl text-lg text-slate-300">
           Vote YES or NO, and share your opinion in real time.
         </p>
-      </section>
-
-      {/* STATS SECTION */}
-      <section className="px-6">
-        <div className="mx-auto max-w-6xl">
-          <Stats />
-        </div>
       </section>
 
       {/* VOTE FORM */}
