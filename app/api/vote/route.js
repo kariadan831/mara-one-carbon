@@ -1,22 +1,47 @@
 import admin from "@/lib/firebaseAdmin";
+import { FieldValue } from "firebase-admin/firestore";
 
-// 🟢 STEP 3: RATE LIMIT STORE (in-memory)
+// 🟢 RATE LIMIT STORE (in-memory)
 const rateLimit = new Map();
 
 export async function POST(req) {
   try {
-    const body = await req.json();
+    // ✅ SAFE JSON PARSING
+    let body;
+
+    try {
+      body = await req.json();
+    } catch (err) {
+      return Response.json(
+        {
+          success: false,
+          message: "Invalid or missing JSON body",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (!body) {
+      return Response.json(
+        {
+          success: false,
+          message: "Empty request body",
+        },
+        { status: 400 }
+      );
+    }
 
     const { name, phone, email, vote, message, reference } = body;
 
-    // 🟡 STEP 3A: RATE LIMIT CHECK (ANTI-SPAM)
+    // 🟡 GET USER IP
     const ip =
       req.headers.get("x-forwarded-for") ||
       req.headers.get("x-real-ip") ||
       "unknown";
 
+    // 🟡 RATE LIMIT (20 seconds)
     const now = Date.now();
-    const LIMIT_TIME = 20 * 1000; // 20 seconds
+    const LIMIT_TIME = 20 * 1000;
 
     const lastTime = rateLimit.get(ip);
 
@@ -32,7 +57,7 @@ export async function POST(req) {
 
     rateLimit.set(ip, now);
 
-    // 🟢 STEP 1: VALIDATION
+    // 🟢 VALIDATION
     if (!name || !phone || !email || !vote) {
       return Response.json(
         {
@@ -43,7 +68,7 @@ export async function POST(req) {
       );
     }
 
-    // 🟢 STEP 2: VALID VOTE ONLY
+    // 🟢 VALID VOTE CHECK
     if (vote !== "YES" && vote !== "NO") {
       return Response.json(
         {
@@ -56,7 +81,7 @@ export async function POST(req) {
 
     const db = admin.firestore();
 
-    // 🟢 STEP 3: CHECK DUPLICATE EMAIL
+    // 🟢 CHECK DUPLICATE EMAIL
     const existingEmail = await db
       .collection("votes")
       .where("email", "==", email.toLowerCase())
@@ -72,7 +97,7 @@ export async function POST(req) {
       );
     }
 
-    // 🟢 STEP 4: CHECK DUPLICATE PHONE
+    // 🟢 CHECK DUPLICATE PHONE
     const existingPhone = await db
       .collection("votes")
       .where("phone", "==", phone)
@@ -88,7 +113,7 @@ export async function POST(req) {
       );
     }
 
-    // 🟢 STEP 5: CLEAN DATA
+    // 🟢 CLEAN DATA
     const voteData = {
       name: String(name).trim(),
       phone: String(phone).trim(),
@@ -96,25 +121,24 @@ export async function POST(req) {
       vote,
       message: message ? String(message).trim() : "",
       reference: reference || `VOTE_${Date.now()}`,
-      createdAt: new Date().toISOString(),
+      createdAt: FieldValue.serverTimestamp(),
       ip,
     };
 
-    // 🟢 SAVE
+    // 🟢 SAVE TO FIRESTORE
     const docRef = await db.collection("votes").add(voteData);
 
     return Response.json({
       success: true,
       id: docRef.id,
     });
-
   } catch (error) {
-    console.log("❌ FIREBASE ERROR:", error);
+    console.error("❌ FIREBASE ERROR:", error);
 
     return Response.json(
       {
         success: false,
-        message: error.message,
+        message: error.message || "Server error",
       },
       { status: 500 }
     );
